@@ -29,13 +29,9 @@ void xrServer::Process_event_destroy(NET_Packet& P, u32 time, u16 ID, NET_Packet
 
 		while (!e_dest->children.empty())
 			Process_event_destroy(P, time, *e_dest->children.begin(), pEventPack);
-	};
-
-	if (0xffff == parent_id && !pEventPack)
-	{
-		SendBroadcast(BroadcastCID, P);
 	}
-	else
+
+	if (0xffff != parent_id && pEventPack)
 	{
 		NET_Packet	tmpP;
 		if (0xffff != parent_id && Process_event_reject(P, time, parent_id, ID, false))
@@ -48,18 +44,19 @@ void xrServer::Process_event_destroy(NET_Packet& P, u32 time, u16 ID, NET_Packet
 
 			pEventPack->w_u8(u8(tmpP.B.count));
 			pEventPack->w(&tmpP.B.data, tmpP.B.count);
-		};
+		}
 
 		if (game)
 			game->u_EventGen(tmpP, GE_DESTROY, id_dest);
 
 		pEventPack->w_u8(u8(tmpP.B.count));
 		pEventPack->w(&tmpP.B.data, tmpP.B.count);
-	};
+	}
+	else SendTo_LL(P.B.data, (u32)P.B.count);
 
-	if (NULL == pEPack && NULL != pEventPack)
+	if (!pEPack && pEventPack)
 	{
-		SendBroadcast(BroadcastCID, *pEventPack);
+		SendTo_LL((*pEventPack).B.data, (u32)(*pEventPack).B.count);
 	}
 
 	if (!game)

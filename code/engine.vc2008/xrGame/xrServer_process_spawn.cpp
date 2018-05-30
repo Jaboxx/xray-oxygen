@@ -117,15 +117,13 @@ CSE_Abstract* xrServer::Process_spawn(NET_Packet& P, BOOL bSpawnWithClientsMainE
 		pAbstractE->Spawn_Write(Packet, FALSE);
 		if (pAbstractE->s_flags.is(M_SPAWN_UPDATE))
 			pAbstractE->UPDATE_Write(Packet);
-		SendBroadcast(CL->ID, Packet);
 	}
 	else
 	{
 		pAbstractE->Spawn_Write(Packet, FALSE);
 		if (pAbstractE->s_flags.is(M_SPAWN_UPDATE))
 			pAbstractE->UPDATE_Write(Packet);
-		ClientID clientID; clientID.set(0);
-		SendBroadcast(clientID, Packet);
+		SendTo_LL(Packet.B.data, (u32)Packet.B.count);
 	}
 
 	return pAbstractE;

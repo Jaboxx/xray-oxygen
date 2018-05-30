@@ -47,8 +47,7 @@ public:
 	virtual EConnect		Connect				(LPCSTR session_name);
 
 	// extended functionality
-	virtual void			OnMessage			(NET_Packet& P, ClientID sender) = 0;
-
+	virtual void			OnMessage			(NET_Packet& P) = 0;
 	virtual void			client_Destroy		(IClient* C)	= 0;			// destroy client info
 
 	IClient*				GetServerClient		()			{ return SV_Client; };

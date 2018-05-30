@@ -55,6 +55,5 @@ void xrServer::Process_event_ownership(NET_Packet& P, u32, u16 ID, BOOL bForced)
 		std::memcpy(&P.B.data[6], &NewType, 2);
 		// TODO: Объясните форсеру: какого хрена тут 2 байта!!!
 	}
-	// Signal to everyone (including sender)
-	SendBroadcast(BroadcastCID, P);
+	SendTo_LL(P.B.data, (u32)P.B.count);
 }

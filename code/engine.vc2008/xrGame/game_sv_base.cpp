@@ -150,7 +150,7 @@ void game_sv_GameState::u_EventGen(NET_Packet& P, u16 type, u16 dest)
 
 void game_sv_GameState::u_EventSend(NET_Packet& P)
 {
-	;
+	m_server->SendTo_LL(P.B.data, (u32)P.B.count);
 }
 
 void game_sv_GameState::Update		()
@@ -214,7 +214,15 @@ void game_sv_GameState::switch_distance(NET_Packet &net_packet)
 
 void game_sv_GameState::OnEvent(NET_Packet &tNetPacket, u16 type, u32 time)
 {
-	;
+	if (type == GAME_EVENT_ON_HIT)
+	{
+		u16		id_dest = tNetPacket.r_u16();
+		u16     id_src = tNetPacket.r_u16();
+		CSE_Abstract*	e_src = get_entity_from_eid(id_src);
+
+		if (e_src)
+			m_server->SendTo_LL(tNetPacket.B.data, (u32)tNetPacket.B.count);
+	}
 }
 
 void game_sv_GameState::AddDelayedEvent(NET_Packet &tNetPacket, u16 type, u32 time)

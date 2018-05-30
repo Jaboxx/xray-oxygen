@@ -12,10 +12,5 @@ void xrServer::Process_event_activate(NET_Packet& P, const u32 time, const u16 i
 	R_ASSERT2(e_entity, make_string("entity not found. id_parent=%d id_entity=%d frame=%d", id_parent, id_entity, Device.dwFrame).c_str());
 
 	xr_delete(e_parent);
-
-	if (0xffff != e_entity->ID_Parent && send_message)
-	{
-		// Signal to everyone (including sender)
-		SendBroadcast(BroadcastCID, P);
-	}
+	SendTo_LL(P.B.data, (u32)P.B.count);
 }
