@@ -82,39 +82,42 @@ void	CResourceManager::OnDeviceCreate	(IReader* F)
 	}
 
 	// Load blenders
-    fs						= F->open_chunk	(2);
-	if (fs){
+    fs = F->open_chunk	(2);
+	if (fs)
+	{
 		IReader*	chunk	= NULL;
 		int			chunk_id= 0;
 
-		while ((chunk=fs->open_chunk(chunk_id))!=NULL){
-			CBlender_DESC	desc;
-			chunk->r		(&desc,sizeof(desc));
-			
-        if (desc.CLS == B_SHADOW_WORLD)
+		while ((chunk = fs->open_chunk(chunk_id)) != NULL) 
 		{
-		    chunk->close();
-			chunk_id += 1;
-			    continue;
-		}
-			IBlender*		B = IBlender::Create(desc.CLS);
-			if	(!B)
-				Msg				("! Renderer doesn't support blender '%s'",desc.cName);
-			else
+			CBlender_DESC desc;
+			chunk->r(&desc, sizeof(desc));
+
+			if (desc.CLS == B_SHADOW_WORLD)
 			{
-				if	(B->getDescription().version != desc.version)
+				chunk->close();
+				chunk_id++;
+				continue;
+			}
+
+			IBlender* B = IBlender::Create(desc.CLS);
+			if (B)
+			{
+				if (B->getDescription().version != desc.version)
 				{
-					Msg			("! Version conflict in shader '%s'",desc.cName);
+					Msg("! Version conflict in shader '%s'", desc.cName);
 				}
 
-				chunk->seek		(0);
-				B->Load			(*chunk,desc.version);
+				chunk->seek(0);
+				B->Load(*chunk, desc.version);
 
-				auto I =  m_blenders.insert	(std::make_pair(xr_strdup(desc.cName),B));
-				R_ASSERT2		(I.second,"shader.xr - found duplicate name!!!");
+				auto I = m_blenders.insert(std::make_pair(xr_strdup(desc.cName), B));
+				R_ASSERT2(I.second, "shader.xr - found duplicate name!!!");
 			}
-			chunk->close	();
-			chunk_id		+= 1;
+			else Msg("! Renderer doesn't support blender '%s'", desc.cName);
+
+			chunk->close();
+			chunk_id += 1;
 		}
 		fs->close();
 	}

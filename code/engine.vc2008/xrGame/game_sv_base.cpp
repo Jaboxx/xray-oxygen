@@ -63,7 +63,7 @@ void game_sv_GameState::signal_Syncronize()
 }
 
 // Network
-void game_sv_GameState::net_Export_State(NET_Packet& P, ClientID to)
+void game_sv_GameState::net_Export_State(NET_Packet& P)
 {
 	// Generic
 	P.w_u32			(m_type);
@@ -75,11 +75,6 @@ void game_sv_GameState::net_Export_State(NET_Packet& P, ClientID to)
 	net_Export_GameTime(P);
 }
 
-void game_sv_GameState::net_Export_Update(NET_Packet& P, ClientID id_to, ClientID id)
-{
-	net_Export_GameTime			(P);
-};
-
 void game_sv_GameState::net_Export_GameTime(NET_Packet& P)
 {
 	//Syncronize GameTime 
@@ -89,17 +84,11 @@ void game_sv_GameState::net_Export_GameTime(NET_Packet& P)
 	//Syncronize EnvironmentGameTime 
 	P.w_u64(GetEnvironmentGameTime());
 	P.w_float(GetEnvironmentGameTimeFactor());
-};
-
-
-void game_sv_GameState::OnPlayerConnect			(ClientID /**id_who/**/)
-{
-	signal_Syncronize	();
 }
 
-void game_sv_GameState::OnPlayerDisconnect		(ClientID id_who, LPSTR, u16 )
+void game_sv_GameState::OnPlayerConnect()
 {
-	signal_Syncronize	();
+	signal_Syncronize();
 }
 
 void game_sv_GameState::Create(shared_str &options)
@@ -124,7 +113,6 @@ void game_sv_GameState::Create(shared_str &options)
 		m_alife_simulator = xr_new<CALifeSimulator>(&server(), &options);
 
 	switch_Phase(GAME_PHASE_INPROGRESS);
-
 }
 
 //-----------------------------------------------------------
@@ -146,7 +134,7 @@ CSE_Abstract* game_sv_GameState::spawn_end(CSE_Abstract* E, ClientID id)
 	u16								skip_header;
 	E->Spawn_Write					(P,TRUE);
 	P.r_begin						(skip_header);
-	CSE_Abstract* N = m_server->Process_spawn	(P,id);
+	CSE_Abstract* N = m_server->Process_spawn	(P);
 	F_entity_Destroy				(E);
 
 	return N;
@@ -162,7 +150,7 @@ void game_sv_GameState::u_EventGen(NET_Packet& P, u16 type, u16 dest)
 
 void game_sv_GameState::u_EventSend(NET_Packet& P)
 {
-	m_server->SendBroadcast(BroadcastCID,P);
+	;
 }
 
 void game_sv_GameState::Update		()
@@ -194,7 +182,7 @@ game_sv_GameState::~game_sv_GameState()
 	delete_data(m_alife_simulator);
 }
 
-bool game_sv_GameState::change_level (NET_Packet &net_packet, ClientID sender)
+bool game_sv_GameState::change_level (NET_Packet &net_packet)
 {
 	if (ai().get_alife())
 		return (alife().change_level(net_packet));
@@ -202,13 +190,13 @@ bool game_sv_GameState::change_level (NET_Packet &net_packet, ClientID sender)
 		return (true);
 }
 
-void game_sv_GameState::save_game (NET_Packet &net_packet, ClientID sender)
+void game_sv_GameState::save_game(NET_Packet &net_packet)
 {
 	if (ai().get_alife())
 		alife().save(net_packet);
 }
 
-bool game_sv_GameState::load_game (NET_Packet &net_packet, ClientID sender)
+bool game_sv_GameState::load_game(NET_Packet &net_packet)
 {
 	if (!ai().get_alife())
 		return true;
@@ -218,28 +206,20 @@ bool game_sv_GameState::load_game (NET_Packet &net_packet, ClientID sender)
 	return (alife().load_game(*game_name, true));
 }
 
-void game_sv_GameState::switch_distance(NET_Packet &net_packet, ClientID sender)
+void game_sv_GameState::switch_distance(NET_Packet &net_packet)
 {
 	if (ai().get_alife())
 		alife().set_switch_distance(net_packet.r_float());
 }
 
-void game_sv_GameState::OnEvent (NET_Packet &tNetPacket, u16 type, u32 time, ClientID sender )
+void game_sv_GameState::OnEvent(NET_Packet &tNetPacket, u16 type, u32 time)
 {
-	if (type == GAME_EVENT_ON_HIT)
-	{
-		u16		id_dest = tNetPacket.r_u16();
-		u16     id_src = tNetPacket.r_u16();
-		CSE_Abstract*	e_src = get_entity_from_eid(id_src);
-
-		if (e_src)
-			m_server->SendBroadcast(BroadcastCID, tNetPacket);
-	}
+	;
 }
 
-void game_sv_GameState::AddDelayedEvent(NET_Packet &tNetPacket, u16 type, u32 time, ClientID sender )
+void game_sv_GameState::AddDelayedEvent(NET_Packet &tNetPacket, u16 type, u32 time)
 {
-	m_event_queue->Create(tNetPacket, type, time, sender);
+	m_event_queue->Create(tNetPacket, type, time);
 }
 
 void game_sv_GameState::ProcessDelayedEvent		()
@@ -247,7 +227,7 @@ void game_sv_GameState::ProcessDelayedEvent		()
 	GameEvent* ge = nullptr;
 	while ((ge = m_event_queue->Retreive()) != 0) 
 	{
-		OnEvent(ge->P,ge->type,ge->time,ge->sender);
+		OnEvent(ge->P,ge->type,ge->time);
 		m_event_queue->Release();
 	}
 }
@@ -560,12 +540,8 @@ void game_sv_GameState::sls_default()
 	alife().update_switch();
 }
 
-
 //  [7/5/2005]
-#ifdef DEBUG
-extern	Flags32	dbg_net_Draw_Flags;
-
-void		game_sv_GameState::OnRender()
+void game_sv_GameState::OnRender()
 {
-};
-#endif
+
+}

@@ -6,10 +6,10 @@
 #	include "xrserver_objects_alife_items.h"
 #endif
 
-CSE_Abstract* xrServer::Process_spawn(NET_Packet& P, ClientID sender, BOOL bSpawnWithClientsMainEntityAsParent, CSE_Abstract* tpExistedEntity)
+CSE_Abstract* xrServer::Process_spawn(NET_Packet& P, BOOL bSpawnWithClientsMainEntityAsParent, CSE_Abstract* tpExistedEntity)
 {
 	// create server entity
-	xrClientData* CL	= ID_to_client	(sender);
+	xrClientData* CL = (xrClientData*)SV_Client;
 	CSE_Abstract*	pAbstractE	= tpExistedEntity;
 	if (!pAbstractE)
 	{
@@ -38,12 +38,6 @@ CSE_Abstract* xrServer::Process_spawn(NET_Packet& P, ClientID sender, BOOL bSpaw
 			F_entity_Destroy(pAbstractE);
 			return nullptr;
 		}
-	}
-
-	// check if we can assign entity to some client
-	if (!CL)
-	{
-		CL	= (xrClientData*)SV_Client;
 	}
 
 	// check for respawn-capability and create phantom as needed
@@ -111,27 +105,27 @@ CSE_Abstract* xrServer::Process_spawn(NET_Packet& P, ClientID sender, BOOL bSpaw
 
 	// create packet and broadcast packet to everybody
 	NET_Packet Packet;
-	if (CL) 
+	if (CL)
 	{
 		// For local ONLY
-		pAbstractE->Spawn_Write		(Packet,TRUE	);
+		pAbstractE->Spawn_Write(Packet, TRUE);
 		if (pAbstractE->s_flags.is(M_SPAWN_UPDATE))
-			pAbstractE->UPDATE_Write	(Packet);
-		SendTo				(CL->ID,Packet);
+			pAbstractE->UPDATE_Write(Packet);
+		SendTo_LL(Packet.B.data, (u32)Packet.B.count);
 
 		// For everybody, except client, which contains authorative copy
-		pAbstractE->Spawn_Write		(Packet,FALSE	);
+		pAbstractE->Spawn_Write(Packet, FALSE);
 		if (pAbstractE->s_flags.is(M_SPAWN_UPDATE))
-			pAbstractE->UPDATE_Write	(Packet);
-		SendBroadcast		(CL->ID,Packet);
-	} 
+			pAbstractE->UPDATE_Write(Packet);
+		SendBroadcast(CL->ID, Packet);
+	}
 	else
 	{
-		pAbstractE->Spawn_Write		(Packet,FALSE	);
+		pAbstractE->Spawn_Write(Packet, FALSE);
 		if (pAbstractE->s_flags.is(M_SPAWN_UPDATE))
-			pAbstractE->UPDATE_Write	(Packet);
-		ClientID clientID;clientID.set(0);
-		SendBroadcast		(clientID, Packet);
+			pAbstractE->UPDATE_Write(Packet);
+		ClientID clientID; clientID.set(0);
+		SendBroadcast(clientID, Packet);
 	}
 
 	return pAbstractE;

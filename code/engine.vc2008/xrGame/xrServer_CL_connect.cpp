@@ -53,21 +53,13 @@ void xrServer::Perform_connect_spawn(CSE_Abstract* E, xrClientData* CL, NET_Pack
 	}
 	//-----------------------------------------------------
 	E->s_flags			= save;
-	SendTo				(CL->ID,P);
+	SendTo_LL(P.B.data, (u32)P.B.count);
 	E->net_Processed	= TRUE;
 }
 
-void xrServer::SendConfigFinished(ClientID const & clientId)
-{
-	NET_Packet	P;
-	P.w_begin	(M_SV_CONFIG_FINISHED);
-	SendTo		(clientId, P);
-}
-
-void xrServer::SendConnectionData(IClient* _CL)
+void xrServer::SendConnectionData()
 {
 	conn_spawned_ids.clear();
-	xrClientData*	CL = (xrClientData*)_CL;
 	NET_Packet		P;
 	// Replicate current entities on to this client
 
@@ -75,33 +67,24 @@ void xrServer::SendConnectionData(IClient* _CL)
 		xrSe_it.second->net_Processed = FALSE;
 
 	for (auto &xrSe_it : entities)
-		Perform_connect_spawn(xrSe_it.second, CL, P);
+		Perform_connect_spawn(xrSe_it.second, (xrClientData*)SV_Client, P);
 
 	// Start to send server logo and rules
-	SendConfigFinished(CL->ID);
+	NET_Packet Packet2;
+	P.w_begin(M_SV_CONFIG_FINISHED);
+	SendTo_LL(Packet2.B.data, (u32)Packet2.B.count);
 };
 
-void xrServer::OnCL_Connected(IClient* _CL)
+void xrServer::OnCL_Connected()
 {
-	xrClientData* CL = (xrClientData*)_CL;
-
-	if (!CL)
-	{
-		Msg("! ERROR: Player state not created - incorect message sequence!");
-		return;
-	}
-
-	CL->net_Accepted = TRUE;
-
 	// Export Game Type
 	NET_Packet P;
 	P.w_begin(M_SV_CONFIG_NEW_CLIENT);
 	P.w_stringZ(game->type_name());
-	SendTo(CL->ID, P);
+	SendTo_LL(P.B.data, (u32)P.B.count);
 	// end
 
 	Perform_game_export();
-	SendConnectionData(CL);
-
-	game->OnPlayerConnect(CL->ID);	
+	SendConnectionData();
+	game->OnPlayerConnect();	
 }

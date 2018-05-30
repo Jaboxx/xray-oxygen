@@ -2,9 +2,9 @@
 #include "xrServer.h"
 #include "xrServer_Objects.h"
 
-void xrServer::Process_update(NET_Packet& P, ClientID sender)
+void xrServer::Process_update(NET_Packet& P)
 {
-	xrClientData* CL = ID_to_client(sender);
+	xrClientData* CL = (xrClientData*)SV_Client;
 	if(!CL) return;
 
 	// while has information
@@ -28,17 +28,17 @@ void xrServer::Process_update(NET_Packet& P, ClientID sender)
 			{
 				string16 tmp;
 				CLSID2TEXT(E->m_tClassID, tmp);
-				Debug.fatal(DEBUG_INFO, "Beer from the creator of '%s'; initiator: 0x%08x, r_tell() = %d, pos = %d, objectID = %d",
-					tmp, CL->ID.value(), P.r_tell(), _pos, E->ID);
+				Debug.fatal(DEBUG_INFO, "Beer from the creator of '%s'; r_tell() = %d, pos = %d, objectID = %d",
+					tmp, P.r_tell(), _pos, E->ID);
 			}
 		}
 		else P.r_advance	(size);
 	}
 }
 
-void xrServer::Process_save(NET_Packet& P, ClientID sender)
+void xrServer::Process_save(NET_Packet& P)
 {
-	xrClientData* CL = ID_to_client(sender);
+	xrClientData* CL = (xrClientData*)SV_Client;
 	R_ASSERT2(CL, "Process_save client not found");
 	CL->net_Ready = TRUE;
 

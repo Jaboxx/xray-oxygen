@@ -582,9 +582,6 @@
     <ClInclude Include="ide.hpp">
       <Filter>editor\ide</Filter>
     </ClInclude>
-    <ClInclude Include="ClS\NET_PlayersMonitor.h">
-      <Filter>Game API\NetServer</Filter>
-    </ClInclude>
     <ClInclude Include="ClS\NET_Server.h">
       <Filter>Game API\NetServer</Filter>
     </ClInclude>

@@ -4,14 +4,13 @@
 
 void xrServer::Perform_game_export	()
 {
-    xrClientData* CL = (xrClientData*)SV_Client;
-    if (!CL->net_Accepted)
+    if (!((xrClientData*)SV_Client)->net_Accepted)
         return;
 
     NET_Packet P;
     P.w_begin(M_SV_CONFIG_GAME);
-    game->net_Export_State(P, SV_Client->ID);
-    SendTo(SV_Client->ID, P);
+    game->net_Export_State(P);
+	SendTo_LL(P.B.data, (u32)P.B.count);
 
 	game->sv_force_sync	= FALSE;
 }

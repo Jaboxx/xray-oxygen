@@ -328,19 +328,14 @@ CSE_Abstract *CALifeSimulator__spawn_item2(CALifeSimulator *self, LPCSTR section
 	self->server().FreeID(item->ID, 0);
 	F_entity_Destroy(item);
 
-	ClientID							clientID;
-	clientID.set(0xffff);
-
-	u16									dummy;
+	u16 dummy;
 	packet.r_begin(dummy);
 	VERIFY(dummy == M_SPAWN);
-	return								(self->server().Process_spawn(packet, clientID));
+	return (self->server().Process_spawn(packet));
 }
 
 CSE_Abstract *CALifeSimulator__spawn_ammo(CALifeSimulator *self, LPCSTR section, const Fvector &position, u32 level_vertex_id, GameGraph::_GRAPH_ID game_vertex_id, ALife::_OBJECT_ID id_parent, int ammo_to_spawn)
 {
-	//	if (id_parent == ALife::_OBJECT_ID(-1))
-	//		return							(self->spawn_item(section,position,level_vertex_id,game_vertex_id,id_parent));
 	CSE_ALifeDynamicObject				*object = 0;
 	if (id_parent != ALife::_OBJECT_ID(-1)) {
 		object = ai().alife().objects().object(id_parent, true);
@@ -376,18 +371,15 @@ CSE_Abstract *CALifeSimulator__spawn_ammo(CALifeSimulator *self, LPCSTR section,
 	self->server().FreeID(item->ID, 0);
 	F_entity_Destroy(item);
 
-	ClientID							clientID;
-	clientID.set(0xffff);
-
-	u16									dummy;
+	u16 dummy;
 	packet.r_begin(dummy);
 	VERIFY(dummy == M_SPAWN);
-	return								(self->server().Process_spawn(packet, clientID));
+	return (self->server().Process_spawn(packet));
 }
 
 ALife::_SPAWN_ID CALifeSimulator__spawn_id(CALifeSimulator *self, ALife::_SPAWN_STORY_ID spawn_story_id)
 {
-	return								(((const CALifeSimulator *)self)->spawns().spawn_id(spawn_story_id));
+	return (((const CALifeSimulator *)self)->spawns().spawn_id(spawn_story_id));
 }
 
 void CALifeSimulator__release(CALifeSimulator *self, CSE_Abstract *object, bool)

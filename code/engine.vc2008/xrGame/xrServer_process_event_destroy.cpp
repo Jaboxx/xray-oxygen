@@ -7,7 +7,7 @@
 #include "ai_space.h"
 #include "alife_object_registry.h"
 
-void xrServer::Process_event_destroy(NET_Packet& P, ClientID sender, u32 time, u16 ID, NET_Packet* pEPack)
+void xrServer::Process_event_destroy(NET_Packet& P, u32 time, u16 ID, NET_Packet* pEPack)
 {
 	// Parse message
 	u16 id_dest = ID;
@@ -28,17 +28,17 @@ void xrServer::Process_event_destroy(NET_Packet& P, ClientID sender, u32 time, u
 		if (!pEventPack) pEventPack = &P2;
 
 		while (!e_dest->children.empty())
-			Process_event_destroy(P, sender, time, *e_dest->children.begin(), pEventPack);
+			Process_event_destroy(P, time, *e_dest->children.begin(), pEventPack);
 	};
 
-	if (0xffff == parent_id && NULL == pEventPack)
+	if (0xffff == parent_id && !pEventPack)
 	{
 		SendBroadcast(BroadcastCID, P);
 	}
 	else
 	{
 		NET_Packet	tmpP;
-		if (0xffff != parent_id && Process_event_reject(P, sender, time, parent_id, ID, false))
+		if (0xffff != parent_id && Process_event_reject(P, time, parent_id, ID, false))
 		{
 			game->u_EventGen(tmpP, GE_OWNERSHIP_REJECT, parent_id);
 			tmpP.w_u16(id_dest);

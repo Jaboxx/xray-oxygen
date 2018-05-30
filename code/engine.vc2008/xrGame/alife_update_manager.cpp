@@ -155,7 +155,6 @@ bool CALifeUpdateManager::change_level	(NET_Packet &net_packet)
 	if (m_changing_level)
 		return						(false);
 
-//	prepare_objects_for_save		();
 	// we couldn't use prepare_objects_for_save since we need 
 	// get updates from client 
 	// then change actor server entity 

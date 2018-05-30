@@ -11,13 +11,7 @@ IClient::IClient(CTimer* timer)
 //------------------------------------------------------------------------------
 IClient* IPureServer::ID_to_client(ClientID ID, bool ScanAll)
 {
-	if(ID.value())
-	{
-		IClient* ret_client = GetClientByID(ID);
-		if (ret_client || !ScanAll)
-			return ret_client;
-	}
-	return nullptr;
+	return SV_Client;
 }
 
 //==============================================================================

@@ -76,7 +76,6 @@ public:
 
 	// spawn data
 	shared_str						s_name;
-//.	u8								s_gameid;
 	GameTypeChooser					m_gameType;
 	u8								s_RP;
 	Flags16							s_flags;		// state flags
@@ -106,7 +105,7 @@ public:
 	
 									CSE_Abstract			(LPCSTR caSection);
 	virtual							~CSE_Abstract			();
-	virtual void					OnEvent					(NET_Packet &tNetPacket, u16 type, u32 time, ClientID sender ){};
+	virtual void					OnEvent					(NET_Packet &tNetPacket, u16 type, u32 time){};
 #ifndef XRGAME_EXPORTS
 	virtual void					FillProps				(LPCSTR pref, PropItemVec &items);
 	virtual void		__stdcall	FillProp				(LPCSTR pref, PropItemVec &items);

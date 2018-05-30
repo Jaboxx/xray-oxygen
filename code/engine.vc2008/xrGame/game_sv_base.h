@@ -12,7 +12,7 @@ class CSE_Abstract;
 class xrServer;
 class GameEventQueue;
 
-class	game_sv_GameState	: public game_GameState
+class game_sv_GameState	: public game_GameState
 {
 	typedef game_GameState inherited;
 
@@ -24,10 +24,10 @@ protected:
 	CALifeSimulator					*m_alife_simulator;
 
 	//Events
-	virtual		void				OnEvent					(NET_Packet &tNetPacket, u16 type, u32 time, ClientID sender );
+	virtual		void				OnEvent					(NET_Packet &tNetPacket, u16 type, u32 time);
+
 public:
-	virtual		void				OnPlayerConnect			(ClientID id_who);
-	virtual		void				OnPlayerDisconnect		(ClientID id_who, LPSTR Name, u16 GameID);
+	virtual		void				OnPlayerConnect			();
 
 public:
 									game_sv_GameState		();
@@ -38,9 +38,7 @@ public:
 	// Signals
 	virtual		void				signal_Syncronize		();
 
-#ifdef DEBUG
 	virtual		void				OnRender				();
-#endif
 	
 				CSE_Abstract*		spawn_begin				(LPCSTR N);
 				CSE_Abstract*		spawn_end				(CSE_Abstract* E, ClientID id);
@@ -53,7 +51,7 @@ public:
 
 	// Events
 	virtual		void				OnCreate				(u16 id_who);
-	virtual		void				OnTouch					(u16 eid_who, u16 eid_target, BOOL bForced = FALSE);			// TRUE=allow ownership, FALSE=denied
+	virtual		void				OnTouch					(u16 eid_who, u16 eid_target, BOOL bForced = FALSE); // TRUE=allow ownership, FALSE=denied
 	virtual		void				OnDetach				(u16 eid_who, u16 eid_target);
 
 	virtual		void				OnDestroyObject			(u16 eid_who);			
@@ -61,16 +59,15 @@ public:
 	// Main
 	virtual		void				Create					(shared_str& options);
 	virtual		void				Update					();
-	virtual		void				net_Export_State		(NET_Packet& P, ClientID id_to);				// full state
-	virtual		void				net_Export_Update		(NET_Packet& P, ClientID id_to, ClientID id);		// just incremental update for specific client
-	virtual		void				net_Export_GameTime		(NET_Packet& P);						// update GameTime only for remote clients
+	virtual		void				net_Export_State		(NET_Packet& P);				// full state
+	virtual		void				net_Export_GameTime		(NET_Packet& P);				// update GameTime only for remote clients
 
-	virtual		bool				change_level			(NET_Packet &net_packet, ClientID sender);
-	virtual		void				save_game				(NET_Packet &net_packet, ClientID sender);
-	virtual		bool				load_game				(NET_Packet &net_packet, ClientID sender);
-	virtual		void				switch_distance			(NET_Packet &net_packet, ClientID sender);
+	virtual		bool				change_level			(NET_Packet &net_packet);
+	virtual		void				save_game				(NET_Packet &net_packet);
+	virtual		bool				load_game				(NET_Packet &net_packet);
+	virtual		void				switch_distance			(NET_Packet &net_packet);
 
-				void				AddDelayedEvent			(NET_Packet &tNetPacket, u16 type, u32 time, ClientID sender );
+				void				AddDelayedEvent			(NET_Packet &tNetPacket, u16 type, u32 time);
 				void				ProcessDelayedEvent		();
 				//this method will delete all events for entity that already not exist (in case when player was kicked)
 				void				CleanDelayedEventFor	(u16 id_entity_victim);
@@ -101,5 +98,4 @@ public:
 	virtual		ALife::_TIME_ID		GetEnvironmentGameTime();
 	virtual		float				GetEnvironmentGameTimeFactor();
 	virtual		void				SetEnvironmentGameTimeFactor(const float fTimeFactor);
-
 };

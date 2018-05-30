@@ -43,19 +43,7 @@ xrServer::xrServer() : IPureServer(Device.GetTimerGlobal())
 
 xrServer::~xrServer()
 {
-	struct ClientDestroyer
-	{
-		static bool true_generator(IClient*)
-		{
-			return true;
-		}
-	};
-	IClient* tmp_client = net_players.GetFoundClient(&ClientDestroyer::true_generator);
-	while (tmp_client)
-	{
-		client_Destroy(tmp_client);
-		tmp_client = net_players.GetFoundClient(&ClientDestroyer::true_generator);
-	}
+	client_Destroy(SV_Client);
 	m_aDelayedPackets.clear();
 	entities.clear();
 }
@@ -66,8 +54,9 @@ CSE_Abstract* xrServer::ID_to_entity(u16 ID)
 {
 	if (0xffff != ID)
 	{
-		xrS_entities::iterator	I = entities.find(ID);
-		if (entities.end() != I)		return I->second;
+		auto I = entities.find(ID);
+		if (entities.end() != I)
+			return I->second;
 	}
 	return nullptr;
 }
@@ -76,35 +65,35 @@ CSE_Abstract* xrServer::ID_to_entity(u16 ID)
 void xrServer::client_Destroy(IClient* C)
 {
 	// Delete assosiated entity
-	IClient* alife_client =	net_players.FindAndEraseClient(std::bind(std::equal_to<IClient*>(), std::placeholders::_1,C));
+	IClient* alife_client = SV_Client;
 
 	if (alife_client)
 	{
-		CSE_Abstract* pOwner	= static_cast<xrClientData*>(alife_client)->owner;
-		CSE_Spectator* pS		= smart_cast<CSE_Spectator*>(pOwner);
+		CSE_Abstract* pOwner = static_cast<xrClientData*>(alife_client)->owner;
+		CSE_Spectator* pS = smart_cast<CSE_Spectator*>(pOwner);
 		if (pS)
 		{
-			NET_Packet			P;
-			P.w_begin			(M_EVENT);
-			P.w_u32				(Level().timeServer());
-			P.w_u16				(GE_DESTROY);
-			P.w_u16				(pS->ID);
-			SendBroadcast		(C->ID,P);
+			NET_Packet P;
+			P.w_begin(M_EVENT);
+			P.w_u32(Level().timeServer());
+			P.w_u16(GE_DESTROY);
+			P.w_u16(pS->ID);
 		};
 
 		DelayedPacket pp;
 		pp.SenderID = alife_client->ID;
 		xr_deque<DelayedPacket>::iterator it;
-		do{
-			it						=std::find(m_aDelayedPackets.begin(),m_aDelayedPackets.end(),pp);
-			if(it!=m_aDelayedPackets.end())
+		do
+		{
+			it = std::find(m_aDelayedPackets.begin(), m_aDelayedPackets.end(), pp);
+			if (it != m_aDelayedPackets.end())
 			{
-				m_aDelayedPackets.erase	(it);
+				m_aDelayedPackets.erase(it);
 				Msg("removing packet from delayed event storage");
-			}else
-				break;
-		}while(true);
-		
+			}
+			else break;
+		} while (true);
+
 		if (pOwner)
 		{
 			game->CleanDelayedEventFor(pOwner->ID);
@@ -117,60 +106,47 @@ void xrServer::client_Destroy(IClient* C)
 INT g_sv_SendUpdate = 0;
 #endif
 
-void xrServer::Update	()
+void xrServer::Update()
 {
-	VERIFY(verify_entities());
-
 	ProceedDelayedPackets();
 	// game update
 	game->ProcessDelayedEvent();
 	game->Update();
 
-	if (game->sv_force_sync)	Perform_game_export();
-#ifdef DEBUG
-    verify_entities();
-#endif
+	if (game->sv_force_sync)	
+		Perform_game_export();
+
+	VERIFY(verify_entities());
 }
 
-void xrServer::OnDelayedMessage(NET_Packet& P, ClientID sender)
+void xrServer::OnDelayedMessage(NET_Packet& P)
 {
 	u16 type;
 	P.r_begin(type);
 
 	if (type == M_CLIENT_REQUEST_CONNECTION_DATA)
-		OnCL_Connected(SV_Client);
+		OnCL_Connected();
 
-#ifdef DEBUG
-    verify_entities();
-#endif
+	VERIFY(verify_entities());
 }
 
-extern	float	g_fCatchObjectTime;
-u32 xrServer::OnMessage(NET_Packet& P, ClientID sender)			// Non-Zero means broadcasting with "flags" as returned
+// Non-Zero means broadcasting with "flags" as returned
+void xrServer::OnMessage(NET_Packet& P)			
 {
-	u16			type;
-	P.r_begin	(type);
-
-	VERIFY							(verify_entities());
-	xrClientData* CL				= ID_to_client(sender);
+	u16 type;
+	P.r_begin(type);
 
 	switch (type)
 	{
-	case M_UPDATE:	
-		{
-			Process_update			(P,sender);						// No broadcast
-			VERIFY					(verify_entities());
-		}break;
-	case M_SPAWN:	
-		{
-			Process_spawn			(P,sender);
-			VERIFY					(verify_entities());
-		}break;
-	case M_EVENT:	
-		{
-			Process_event			(P,sender);
-			VERIFY					(verify_entities());
-		}break;
+	case M_UPDATE:							Process_update(P); // No broadcast break;
+	case M_SPAWN:							Process_spawn(P); break;
+	case M_EVENT:							Process_event(P); break;
+	case M_SWITCH_DISTANCE:					game->switch_distance(P); break;
+	case M_SAVE_GAME:						game->save_game(P); break;
+	case M_SAVE_PACKET:						Process_save(P); break;
+	case M_CLIENT_REQUEST_CONNECTION_DATA:	AddDelayedPacket(P); break;
+	case M_LOAD_GAME:						game->load_game(P); break;
+	case M_CHANGE_LEVEL:					game->change_level(P); break;
 	case M_EVENT_PACK:
 		{
 			NET_Packet	tmpP;
@@ -178,48 +154,12 @@ u32 xrServer::OnMessage(NET_Packet& P, ClientID sender)			// Non-Zero means broa
 			{
 				tmpP.B.count		= P.r_u8();
 				P.r					(&tmpP.B.data, tmpP.B.count);
-
-				OnMessage			(tmpP, sender);
+				OnMessage			(tmpP);
 			};			
 		}break;
 	//-------------------------------------------------------------------
-	case M_SWITCH_DISTANCE:
-		{
-			game->switch_distance	(P,sender);
-			VERIFY					(verify_entities());
-		}break;
-	case M_CHANGE_LEVEL:
-		{
-			if (game->change_level(P,sender))
-			{
-				SendBroadcast		(BroadcastCID,P);
-			}
-			VERIFY					(verify_entities());
-		}break;
-	case M_SAVE_GAME:
-		{
-			game->save_game			(P,sender);
-			VERIFY					(verify_entities());
-		}break;
-	case M_LOAD_GAME:
-		{
-			game->load_game			(P,sender);
-			SendBroadcast			(BroadcastCID,P);
-			VERIFY					(verify_entities());
-		}break;
-	case M_SAVE_PACKET:
-		{
-			Process_save			(P,sender);
-			VERIFY					(verify_entities());
-		}break;
-	case M_CLIENT_REQUEST_CONNECTION_DATA:
-		{
-			AddDelayedPacket(P, sender);
-		}break;
 	}
 	VERIFY (verify_entities());
-
-	return 0;
 }
 
 void xrServer::SendTo_LL(void* data, u32 size)
@@ -227,28 +167,8 @@ void xrServer::SendTo_LL(void* data, u32 size)
 	Level().OnMessage(data,size);
 }
 
-void xrServer::SendTo(ClientID ID, NET_Packet& P)
-{
-    SendTo_LL(P.B.data, (u32)P.B.count);
-}
-
-void xrServer::SendBroadcast(ClientID exclude, NET_Packet& P)
-{
-    if (!SV_Client)
-        return;
-    if (SV_Client->ID == exclude)
-        return;
-    if (!SV_Client->flags.bConnected)
-        return;
-
-    xrClientData* tmp_client = static_cast<xrClientData*>(SV_Client);
-	if (tmp_client->net_Accepted)
-	{
-		SendTo_LL(P.B.data, (u32)P.B.count);
-	}
-}
 //--------------------------------------------------------------------
-CSE_Abstract*	xrServer::entity_Create		(LPCSTR name)
+CSE_Abstract* xrServer::entity_Create(LPCSTR name)
 {
 	return F_entity_Create(name);
 }
@@ -259,16 +179,12 @@ void xrServer::entity_Destroy(CSE_Abstract *&P)
 	entities.erase				(P->ID);
 	m_tID_Generator.vfFreeID	(P->ID,Device.TimerAsync());
 
-	if(P->owner && P->owner->owner==P)
-		P->owner->owner		= nullptr;
-
 	P->owner = nullptr;
 	if (!ai().get_alife() || !P->m_bALifeControl)
 	{
 		F_entity_Destroy		(P);
 	}
 }
-
 //--------------------------------------------------------------------
 CSE_Abstract* xrServer::GetEntity(u32 Num)
 {
@@ -345,13 +261,10 @@ shared_str xrServer::level_version(const shared_str &server_options) const
 
 void xrServer::createClient()
 {
-    IClient* CL = xr_new<xrClientData>();
-    CL->ID.set(1);
-    net_players.AddNewClient(CL);
-    CL->name = "single_player";
+	SV_Client = xr_new<xrClientData>();
+	SV_Client->ID.set(1);
 
-    CL->flags.bConnected = TRUE;
-    SV_Client = CL;
+	SV_Client->flags.bConnected = TRUE;
 }
 
 void xrServer::ProceedDelayedPackets()
@@ -360,18 +273,18 @@ void xrServer::ProceedDelayedPackets()
 	while (!m_aDelayedPackets.empty())
 	{
 		DelayedPacket& DPacket = *m_aDelayedPackets.begin();
-		OnDelayedMessage(DPacket.Packet, DPacket.SenderID);
+		OnDelayedMessage(DPacket.Packet);
 		m_aDelayedPackets.pop_front();
 	}
 };
 
-void xrServer::AddDelayedPacket	(NET_Packet& Packet, ClientID Sender)
+void xrServer::AddDelayedPacket	(NET_Packet& Packet)
 {
     std::lock_guard<decltype(DelayedPackestCS)> lock(DelayedPackestCS);
 
 	m_aDelayedPackets.push_back(DelayedPacket());
 	DelayedPacket* NewPacket = &(m_aDelayedPackets.back());
-	NewPacket->SenderID = Sender;
+	NewPacket->SenderID = GetServerClient()->ID.value();
     std::memcpy(&(NewPacket->Packet),&Packet,sizeof(NET_Packet));
 }
 
